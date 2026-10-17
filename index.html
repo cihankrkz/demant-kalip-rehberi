@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DEMANT KALIP REHBERİ - Basit Uygulama</title>
+  <style>
+    :root{
+      --bg:#f3f7fb; --panel:#fff; --primary:#0a5ca8; --muted:#5f7280; --border:#dfeaf5;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#122127}
+    .wrap{max-width:1100px;margin:20px auto;padding:18px}
+    header{display:flex;align-items:baseline;gap:14px;margin-bottom:14px}
+    header h1{margin:0;font-size:20px;color:var(--primary)}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:12px}
+    label{display:flex;flex-direction:column;font-size:13px;color:var(--muted)}
+    select,input,textarea{padding:8px;border:1px solid var(--border);border-radius:8px;background:#fff}
+    textarea{min-height:80px}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+    .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    button{background:var(--primary);color:white;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:700}
+    button.secondary{background:#eaf3ff;color:var(--primary)}
+    .layout{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}
+    .leader{background:linear-gradient(135deg,#edf5ff,#f5faff);padding:12px;border-radius:10px;border:1px solid var(--border)}
+    .alt-card{border:1px solid var(--border);padding:10px;border-radius:8px;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{border-bottom:1px solid var(--border);padding:8px;text-align:left;font-size:13px}
+    .small{font-size:12px;color:var(--muted)}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}.layout{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <p class="small">DEMANT KALIP REHBERİ</p>
+        <h1>İşitme cihazı kalıbı karar destek (Basit)</h1>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="panel">
+        <h2>Değerlendirme Formu</h2>
+
+        <div class="grid" id="formGrid">
+          <label>Cihaz türü
+            <select id="deviceType">
+              <option>RITE</option>
+              <option>BTE</option>
+            </select>
+          </label>
+
+          <label id="powerLabel">Cihaz gücü
+            <select id="devicePower">
+              <option>60</option><option>85</option><option>100</option><option>105</option>
+            </select>
+          </label>
+
+          <label>Kanal uzunluğu
+            <select id="canalLength">
+              <option>Kısa</option><option>Orta</option><option>Uzun</option><option>Çok uzun</option>
+            </select>
+          </label>
+
+          <label>Konka genişliği
+            <select id="conchaWidth">
+              <option>Sığ</option><option>Küçük</option><option>Orta</option><option>Geniş</option><option>Çok geniş</option>
+            </select>
+          </label>
+
+          <label>Kanal şekli
+            <select id="canalShape">
+              <option>Düz</option><option>Kıvrımlı</option>
+            </select>
+          </label>
+
+          <label>Geri besleme riski
+            <select id="feedbackRisk">
+              <option>Düşük</option><option>Yüksek</option>
+            </select>
+          </label>
+
+          <label>Tutuculuk ihtiyacı
+            <select id="retentionNeed">
+              <option>Yok</option><option>Düşük</option><option>Orta</option><option>Yüksek</option>
+            </select>
+          </label>
+
+          <label>El becerisi
+            <select id="dexterity">
+              <option>İyi</option><option>Orta</option><option>Zayıf</option>
+            </select>
+          </label>
+
+          <label>Kozmetik tercih
+            <select id="cosmeticPreference">
+              <option>Görünmesin</option><option>Önemsiz</option>
+            </select>
+          </label>
+
+          <label>Tıkanıklık hissi
+            <select id="occlusionSensitivity">
+              <option>Yok</option><option>Var</option>
+            </select>
+          </label>
+
+          <label class="full">
+            Anatomik notlar
+            <textarea id="anatomyNotes" placeholder="Opsiyonel açıklama..."></textarea>
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="evaluateBtn">Öneri üret</button>
+          <button id="saveBtn" class="secondary">Seçimi kaydet</button>
+          <button id="csvBtn" class="secondary">CSV dışa aktar</button>
+          <button id="printBtn" class="secondary">Yazdır / PDF</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Öneriler</h2>
+
+        <div id="resultsArea">
+          <p class="small">Öneri üretmek için formu doldurup “Öneri üret”e basın.</p>
+        </div>
+
+        <div id="exclusions" style="margin-top:12px"></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Kayıtlı Değerlendirmeler</h2>
+      <div id="historyArea"><p class="small">Henüz kayıt yok.</p></div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      const catalog = [
+        'Micro','Canal','Canal Lock','Double Canal Lock','Double Canal Lock Short',
+        'Half Skeleton','Half Shell','Skeleton','Skeleton Wing Lock','Full Shell',
+        'Lite Micro','Lite Canal','Lite Half Shell'
+      ];
+
+      const deviceTypeEl = document.getElementById('deviceType');
+      const devicePowerEl = document.getElementById('devicePower');
+      const powerLabel = document.getElementById('powerLabel');
+      const canalLengthEl = document.getElementById('canalLength');
+      const conchaWidthEl = document.getElementById('conchaWidth');
+      const canalShapeEl = document.getElementById('canalShape');
+      const feedbackRiskEl = document.getElementById('feedbackRisk');
+      const retentionNeedEl = document.getElementById('retentionNeed');
+      const dexterityEl = document.getElementById('dexterity');
+      const cosmeticEl = document.getElementById('cosmeticPreference');
+      const occlusionEl = document.getElementById('occlusionSensitivity');
+      const anatomyNotesEl = document.getElementById('anatomyNotes');
+      const evaluateBtn = document.getElementById('evaluateBtn');
+      const saveBtn = document.getElementById('saveBtn');
+      const csvBtn = document.getElementById('csvBtn');
+      const printBtn = document.getElementById('printBtn');
+      const resultsArea = document.getElementById('resultsArea');
+      const exclusions = document.getElementById('exclusions');
+      const historyArea = document.getElementById('historyArea');
+
+      const STORAGE_KEY = 'demant_kalip_history_v1';
+
+      function updatePowerOptions(){
+        const t = deviceTypeEl.value;
+        devicePowerEl.innerHTML = '';
+        if(t === 'RITE'){
+          ['60','85','100','105'].forEach(v => {
+            const o = document.createElement('option'); o.value = v; o.textContent = v; devicePowerEl.appendChild(o);
+          });
+        } else {
+          ['Standart','Power','Super Power','Ultra Power'].forEach(v => {
+            const o = document.createElement('option'); o.value = v; o.textContent = v; devicePowerEl.appendChild(o);
+          });
+        }
+      }
+      deviceTypeEl.addEventListener('change', updatePowerOptions);
+      updatePowerOptions();
+
+      function evaluate(form){
+        const HIGH_RITE = ['100','105'];
+        const HIGH_BTE = ['Super Power','Ultra Power'];
+        const isHighPower = (form.deviceType === 'RITE' && HIGH_RITE.includes(form.devicePower)) ||
+                            (form.deviceType === 'BTE' && HIGH_BTE.includes(form.devicePower));
+
+        const results = catalog.map(name => {
+          let score = 0;
+          const reasons = [];
+          const eliminated = [];
+
+          if(isHighPower){
+            if(name === 'Full Shell'){
+              score += 40; reasons.push('Yüksek cihaz gücü nedeniyle Full Shell en güvenli tercih.');
+            } else {
+              eliminated.push('Yüksek güç gerektiği için Full Shell tercih edilir; bu tip daha az uygundur.');
+            }
+          }
+
+          if(form.deviceType === 'RITE'){
+            score += 20; reasons.push('RITE cihaz için genel uygunluk.');
+            if(['Micro','Canal','Canal Lock','Lite Micro','Lite Canal'].includes(name)){
+              score += 10; reasons.push('RITE için kompakt/estetik seçenek uygun.');
+            }
+          } else {
+            score += 18; reasons.push('BTE cihaz için genel uygunluk.');
+            if(['Full Shell','Half Shell','Skeleton','Skeleton Wing Lock'].includes(name)){
+              score += 12; reasons.push('BTE için destekleyici/kapalı tipler uygundur.');
+            }
+          }
+
+          if(form.retentionNeed === 'Yüksek'){
+            if(['Canal Lock','Double Canal Lock','Full Shell','Skeleton Wing Lock'].includes(name)){
+              score += 20; reasons.push('Yüksek tutuculuk ihtiyacı => kilitli/kapalı tipler avantajlı.');
+            } else {
+              score -= 8; reasons.push('Yüksek tutuculuk gereken durumda bu tip eksik kalabilir.');
+            }
+          } else if(form.retentionNeed === 'Düşük'){
+            if(['Micro','Canal','Lite Micro'].includes(name)){
+              score += 10; reasons.push('Düşük tutuculuk ihtiyacı => daha kompakt seçenekler uygundur.');
+            }
+          }
+
+          if(form.cosmeticPreference === 'Görünmesin'){
+            if(['Micro','Canal','Lite Micro','Lite Canal'].includes(name)){
+              score += 15; reasons.push('Kozmetik önem taşıyor -> küçük/az görünür tip.');
+            } else {
+              score -= 6; reasons.push('Kozmetik önceliği varsa bu tip daha görünür olabilir.');
+            }
+          }
+
+          if(form.feedbackRisk === 'Yüksek'){
+            if(['Full Shell','Half Shell','Skeleton','Canal Lock'].includes(name)){
+              score += 12; reasons.push('Geri besleme yüksek -> daha kapalı/izole kalıplar tercih edilir.');
+            } else {
+              score -= 6; reasons.push('Geri besleme riski yüksekken açık tipler risk oluşturabilir.');
+            }
+          } else {
+            if(['Micro','Canal'].includes(name)){
+              score += 6; reasons.push('Geri besleme düşük -> hafif tipler uygundur.');
+            }
+          }
+
+          if(form.canalLength === 'Kısa' && form.conchaWidth === 'Sığ'){
+            if(['Micro','Canal','Double Canal Lock Short'].includes(name)){
+              score += 8; reasons.push('Kısa kanal + sığ konka -> kompakt kısa tipler daha uygun.');
+            } else {
+              eliminated.push('Kısa kanal + sığ konka bu kalıbı fiziksel olarak zorlayabilir.');
+            }
+          }
+
+          if(form.canalLength === 'Çok uzun'){
+            if(['Full Shell','Half Shell','Skeleton Wing Lock'].includes(name)){
+              score += 8; reasons.push('Uzun kanal için stabil destek sağlayan tipler avantajlı.');
+            }
+          }
+
+          if(form.canalShape === 'Kıvrımlı'){
+            if(['Canal','Canal Lock','Double Canal Lock','Double Canal Lock Short'].includes(name)){
+              score += 6; reasons.push('Kıvrımlı kanal için daha esnek/uyumlu kanal tipleri uygun.');
+            }
+          } else {
+            if(['Micro','Half Skeleton','Half Shell'].includes(name)){
+              score += 4; reasons.push('Düz kanal için kompakt/yarım kabuk tipleri uygun.');
+            }
+          }
+
+          if(form.dexterity === 'Zayıf'){
+            if(['Full Shell','Canal Lock','Double Canal Lock','Skeleton Wing Lock'].includes(name)){
+              score += 10; reasons.push('El becerisi zayıfsa, takıp-çıkarması kolay/kilitli tipler tercih edilebilir.');
+            } else {
+              score -= 4; reasons.push('El becerisi zayıf kullanıcılar için ince mikro tipler zor olabilir.');
+            }
+          } else if(form.dexterity === 'İyi'){
+            if(['Micro','Canal','Lite Micro'].includes(name)){
+              score += 8; reasons.push('El becerisi iyi -> mikro/estetik tipler uygundur.');
+            }
+          }
+
+          if(form.occlusionSensitivity === 'Var'){
+            if(['Half Shell','Half Skeleton','Skeleton'].includes(name)){
+              score += 8; reasons.push('Tıkanıklık hissi varsa vent/yarım kabuk tipler avantaj sağlar.');
+            } else {
+              score -= 3; reasons.push('Tıkanıklık hassasiyeti varsa kapalı tipler rahatsız edebilir.');
+            }
+          }
+
+          if(eliminated.length){
+            score = Math.max(0, score - 20);
+          }
+
+          score = Math.round(Math.max(0, Math.min(100, score)));
+
+          return { name, score, reasons, eliminated };
+        });
+
+        results.sort((a,b)=> b.score - a.score);
+        return results.slice(0,8);
+      }
+
+      function renderResults(evals){
+        if(!evals || evals.length === 0){
+          resultsArea.innerHTML = '<p class="small">Henüz öneri yok.</p>'; return;
+        }
+        const top = evals[0];
+        let html = '';
+        html += `<div class="leader"><div class="small">En uygun</div><h3>${top.name} — ${top.score}/100</h3><ul>`;
+        top.reasons.forEach(r => html += `<li>${r}</li>`);
+        html += `</ul><div class="small">Bu öneriyi seçmek için alt kartlardan "Seç" butonuna basın.</div></div>`;
+
+        html += `<h3 style="margin-top:12px">Alternatifler</h3>`;
+        const alts = evals.slice(1,4);
+        if(alts.length === 0) html += '<p class="small">Alternatif yok.</p>';
+        alts.forEach(a => {
+          html += `<div class="alt-card"><div style="display:flex;justify-content:space-between;align-items:center">
+            <strong>${a.name}</strong><span class="small">${a.score}/100</span></div><ul>`;
+          a.reasons.forEach(r => html += `<li>${r}</li>`);
+          html += `</ul><div style="margin-top:6px"><button data-select="${a.name}">Bu kalıbı seç</button></div></div>`;
+        });
+
+        const excluded = evals.filter(x => x.eliminated && x.eliminated.length>0);
+        if(excluded.length){
+          html += `<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px"><h4>Uygun olmayan kalıplar / eleme nedenleri</h4><ul>`;
+          excluded.forEach(e => {
+            html += `<li><strong>${e.name}</strong>: ${e.eliminated.join(' / ')}</li>`;
+          });
+          html += `</ul></div>`;
+        }
+
+        resultsArea.innerHTML = html;
+
+        Array.from(resultsArea.querySelectorAll('button[data-select]')).forEach(btn => {
+          btn.addEventListener('click', ()=> {
+            const choice = btn.getAttribute('data-select');
+            saveChoice(choice);
+          });
+        });
+      }
+
+      function saveChoice(name){
+        const record = makeRecord(name);
+        saveRecord(record);
+        renderHistory();
+        alert('Seçim kaydedildi: ' + name);
+      }
+
+      function makeRecord(chosenName){
+        const form = getForm();
+        return {
+          id: 'id-' + Date.now(),
+          createdAt: new Date().toISOString(),
+          form,
+          recommendations: window._lastEvals || [],
+          chosen: chosenName || (window._lastEvals && window._lastEvals[0] && window._lastEvals[0].name) || null
+        };
+      }
+
+      function saveRecord(rec){
+        const raw = localStorage.getItem(STORAGE_KEY);
+        let arr = raw ? JSON.parse(raw) : [];
+        arr.unshift(rec);
+        if(arr.length > 200) arr = arr.slice(0,200);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+      }
+
+      function getForm(){
+        return {
+          deviceType: deviceTypeEl.value,
+          devicePower: devicePowerEl.value,
+          canalLength: canalLengthEl.value,
+          conchaWidth: conchaWidthEl.value,
+          canalShape: canalShapeEl.value,
+          feedbackRisk: feedbackRiskEl.value,
+          retentionNeed: retentionNeedEl.value,
+          dexterity: dexterityEl.value,
+          cosmeticPreference: cosmeticEl.value,
+          occlusionSensitivity: occlusionEl.value,
+          anatomyNotes: anatomyNotesEl.value || ''
+        };
+      }
+
+      function renderHistory(){
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        if(!arr.length){
+          historyArea.innerHTML = '<p class="small">Henüz kayıt yok.</p>'; return;
+        }
+        let html = `<table><thead><tr><th>Tarih</th><th>Cihaz</th><th>Güç</th><th>Önerilen</th><th>Seçim</th></tr></thead><tbody>`;
+        arr.forEach(r => {
+          const d = new Date(r.createdAt).toLocaleString('tr-TR');
+          const device = r.form.deviceType;
+          const power = r.form.devicePower;
+          const suggested = (r.recommendations && r.recommendations[0] && r.recommendations[0].name) || '';
+          const chosen = r.chosen || '';
+          html += `<tr><td>${d}</td><td>${device}</td><td>${power}</td><td>${suggested}</td><td>${chosen}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+        historyArea.innerHTML = html;
+      }
+
+      function exportCsv(){
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        if(!arr.length){ alert('Kayıt yok.'); return; }
+        const headers = ['id','createdAt','deviceType','devicePower','canalLength','conchaWidth','canalShape','feedbackRisk','retentionNeed','dexterity','cosmeticPreference','occlusionSensitivity','anatomyNotes','chosen','recommendations'];
+        const rows = arr.map(r => {
+          const f = r.form;
+          return [
+            r.id, r.createdAt, f.deviceType, f.devicePower, f.canalLength, f.conchaWidth, f.canalShape,
+            f.feedbackRisk, f.retentionNeed, f.dexterity, f.cosmeticPreference, f.occlusionSensitivity,
+            (f.anatomyNotes||'').replace(/"/g,'""'),
+            (r.chosen||''),
+            JSON.stringify(r.recommendations || [])
+          ];
+        });
+        const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'demant_kalip_kayitlar.csv'; a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      evaluateBtn.addEventListener('click', ()=>{
+        const form = getForm();
+        const evals = evaluate(form);
+        window._lastEvals = evals;
+        renderResults(evals);
+        exclusions.innerHTML = '';
+      });
+
+      saveBtn.addEventListener('click', ()=>{
+        if(!window._lastEvals || !window._lastEvals.length){
+          alert('Önce "Öneri üret" butonuna basın.');
+          return;
+        }
+        const defaultChoice = window._lastEvals[0].name;
+        saveChoice(defaultChoice);
+      });
+
+      csvBtn.addEventListener('click', exportCsv);
+      printBtn.addEventListener('click', ()=> window.print());
+
+      renderHistory();
+    })();
+  </script>
+</body>
+</html>
